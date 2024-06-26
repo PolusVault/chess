@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "friendly-chess",
+    "friendly-chess-wasm"
+]

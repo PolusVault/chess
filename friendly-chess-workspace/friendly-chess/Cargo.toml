@@ -1,0 +1,11 @@
+[package]
+name = "friendly-chess"
+version = "0.1.0"
+edition = "2021"
+description = "your friendly neighborhood chess engine"
+authors = ["Hieu <hieunguyen.0527@gmail.com>"]
+license = "MIT"
+
+
+[dependencies]
+thiserror = "1.0.44"
