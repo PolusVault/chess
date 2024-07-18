@@ -1,0 +1,4 @@
+AllowShortFunctionsOnASingleLine: Empty
+BreakBeforeBraces: Stroustrup
+IndentWidth: 4
+SortIncludes: Never

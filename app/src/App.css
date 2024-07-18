@@ -1,0 +1,709 @@
+:root {
+  --vh: 100vh;
+  --vw: 100vw;
+
+  /* if the height is smaller, use it. If not, use the max width of 60rem*/
+  --boardMaxWidth: min(60rem, calc(var(--vh) - 20vh));
+  --boardMaxHeight: var(--boardMaxWidth);
+
+  /* keep the width and height the same to maintain the board shape */
+  --boardWidth: calc(var(--vw));
+  --boardHeight: var(--boardWidth);
+
+  --a1: translate(0%, 700%);
+  --a2: translate(0%, 600%);
+  --a3: translate(0%, 500%);
+  --a4: translate(0%, 400%);
+  --a5: translate(0%, 300%);
+  --a6: translate(0%, 200%);
+  --a7: translate(0%, 100%);
+  --a8: translate(0%, 0%);
+  --b1: translate(100%, 700%);
+  --b2: translate(100%, 600%);
+  --b3: translate(100%, 500%);
+  --b4: translate(100%, 400%);
+  --b5: translate(100%, 300%);
+  --b6: translate(100%, 200%);
+  --b7: translate(100%, 100%);
+  --b8: translate(100%, 0%);
+  --c1: translate(200%, 700%);
+  --c2: translate(200%, 600%);
+  --c3: translate(200%, 500%);
+  --c4: translate(200%, 400%);
+  --c5: translate(200%, 300%);
+  --c6: translate(200%, 200%);
+  --c7: translate(200%, 100%);
+  --c8: translate(200%, 0%);
+  --d1: translate(300%, 700%);
+  --d2: translate(300%, 600%);
+  --d3: translate(300%, 500%);
+  --d4: translate(300%, 400%);
+  --d5: translate(300%, 300%);
+  --d6: translate(300%, 200%);
+  --d7: translate(300%, 100%);
+  --d8: translate(300%, 0%);
+  --e1: translate(400%, 700%);
+  --e2: translate(400%, 600%);
+  --e3: translate(400%, 500%);
+  --e4: translate(400%, 400%);
+  --e5: translate(400%, 300%);
+  --e6: translate(400%, 200%);
+  --e7: translate(400%, 100%);
+  --e8: translate(400%, 0%);
+  --f1: translate(500%, 700%);
+  --f2: translate(500%, 600%);
+  --f3: translate(500%, 500%);
+  --f4: translate(500%, 400%);
+  --f5: translate(500%, 300%);
+  --f6: translate(500%, 200%);
+  --f7: translate(500%, 100%);
+  --f8: translate(500%, 0%);
+  --g1: translate(600%, 700%);
+  --g2: translate(600%, 600%);
+  --g3: translate(600%, 500%);
+  --g4: translate(600%, 400%);
+  --g5: translate(600%, 300%);
+  --g6: translate(600%, 200%);
+  --g7: translate(600%, 100%);
+  --g8: translate(600%, 0%);
+  --h1: translate(700%, 700%);
+  --h2: translate(700%, 600%);
+  --h3: translate(700%, 500%);
+  --h4: translate(700%, 400%);
+  --h5: translate(700%, 300%);
+  --h6: translate(700%, 200%);
+  --h7: translate(700%, 100%);
+  --h8: translate(700%, 0%);
+}
+
+/* html, body { */
+/*     width: 100%; */
+/*     height: 100%; */
+/* } */
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* #app { */
+/*   width: 100%; */
+/*   height: 100%; */
+/* } */
+
+/* .app-container { */
+/* display: grid; */
+/* grid-template-columns: repeat(4, 1fr); */
+/* grid-template-areas:  */
+/* "left" */
+/* "board" */
+/* "right"; */
+/* grid-gap: 2vmin; */
+/* width: 100%; */
+/* height: 100%; */
+/* } */
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.ReactModal__Overlay {
+  position: absolute !important;
+}
+
+.left-section {
+  grid-area: left;
+}
+
+.right-section {
+  grid-area: right;
+}
+
+.opponent-name {
+  grid-area: opponent-name;
+  /* align-self: flex-end; */
+}
+
+.my-name {
+  border: none;
+  grid-area: name;
+}
+
+.my-name[type="text"] {
+  font-size: 1.3rem;
+  /* align-self: flex-start;  */
+}
+
+.opponent-name {
+  font-size: 1.3rem;
+}
+
+.name {
+  padding: 0;
+  margin: 10px 10px;
+}
+
+.chess-board {
+  grid-area: board;
+
+  width: var(--boardWidth);
+  height: var(--boardHeight);
+
+  /* margin: 0 auto; */
+
+  max-width: var(--boardMaxWidth);
+  max-height: var(--boardMaxHeight);
+  background-image: url("./assets/chess_brown_board.png");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  contain: layout;
+  position: relative;
+  border-radius: 3px;
+}
+
+.color-select {
+  max-width: 65px;
+}
+
+.svg-piece {
+  display: block;
+  position: absolute;
+  will-change: transform;
+  width: 12.5%;
+  height: 12.5%;
+  cursor: -webkit-grab;
+}
+
+.svg-piece.dragging {
+  cursor: -webkit-grabbing;
+  z-index: 9999;
+}
+
+.hover-square {
+  display: block;
+  visibility: hidden;
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+}
+
+.highlight {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  /* background-color: blue; */
+}
+
+.highlight div {
+  width: 12.5%;
+  height: 12.5%;
+}
+
+.promotion-window {
+  display: none;
+  position: absolute;
+  width: 12.5%;
+  height: 50%;
+  z-index: 9999;
+  background-color: green;
+}
+
+.promotion-piece-container {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.promotion-piece {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 25% !important;
+}
+
+.square {
+  position: relative;
+  display: block;
+  width: 12.5%;
+  height: 12.5%;
+}
+
+.light {
+  background-color: #769656;
+}
+
+.dark {
+  background-color: #eeeed2;
+}
+
+@media only screen and (min-width: 800px) {
+  .chess-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: var(--boardWidth);
+    max-width: var(--boardMaxWidth);
+    margin: 0 auto;
+  }
+
+  .left-section {
+    order: 1;
+  }
+
+  .right-section {
+    order: 2;
+  }
+
+  .name {
+    margin: 10px 0;
+    align-self: flex-start;
+  }
+}
+
+@media screen and (min-width: 1250px) {
+  #root {
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+  }
+  .chess-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      ". opponent-name opponent-name ."
+      "left board board right"
+      ". name name .";
+    row-gap: 5px;
+    width: 100%;
+    height: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    justify-items: normal;
+    align-items: normal;
+  }
+
+  .chess-board {
+    align-self: center;
+  }
+
+  .opponent-name {
+    align-self: flex-end;
+  }
+
+  .left-section {
+    align-self: center;
+    justify-self: center;
+  }
+
+  .name {
+    margin: 0;
+  }
+}
+
+/* .flipped { */
+/*     transform-origin: 50% 50%; */
+/*     rotate: 180deg; */
+
+/* } */
+/**/
+/* https://stackoverflow.com/questions/11160227/translate-x-and-y-percentage-values-based-on-elements-height-and-width */
+/* generated by script */
+.sq-a1 {
+  transform: var(--a1);
+}
+.sq-a2 {
+  transform: var(--a2);
+}
+.sq-a3 {
+  transform: var(--a3);
+}
+.sq-a4 {
+  transform: var(--a4);
+}
+.sq-a5 {
+  transform: var(--a5);
+}
+.sq-a6 {
+  transform: var(--a6);
+}
+.sq-a7 {
+  transform: var(--a7);
+}
+.sq-a8 {
+  transform: var(--a8);
+}
+.sq-b1 {
+  transform: var(--b1);
+}
+.sq-b2 {
+  transform: var(--b2);
+}
+.sq-b3 {
+  transform: var(--b3);
+}
+.sq-b4 {
+  transform: var(--b4);
+}
+.sq-b5 {
+  transform: var(--b5);
+}
+.sq-b6 {
+  transform: var(--b6);
+}
+.sq-b7 {
+  transform: var(--b7);
+}
+.sq-b8 {
+  transform: var(--b8);
+}
+.sq-c1 {
+  transform: var(--c1);
+}
+.sq-c2 {
+  transform: var(--c2);
+}
+.sq-c3 {
+  transform: var(--c3);
+}
+.sq-c4 {
+  transform: var(--c4);
+}
+.sq-c5 {
+  transform: var(--c5);
+}
+.sq-c6 {
+  transform: var(--c6);
+}
+.sq-c7 {
+  transform: var(--c7);
+}
+.sq-c8 {
+  transform: var(--c8);
+}
+.sq-d1 {
+  transform: var(--d1);
+}
+.sq-d2 {
+  transform: var(--d2);
+}
+.sq-d3 {
+  transform: var(--d3);
+}
+.sq-d4 {
+  transform: var(--d4);
+}
+.sq-d5 {
+  transform: var(--d5);
+}
+.sq-d6 {
+  transform: var(--d6);
+}
+.sq-d7 {
+  transform: var(--d7);
+}
+.sq-d8 {
+  transform: var(--d8);
+}
+.sq-e1 {
+  transform: var(--e1);
+}
+.sq-e2 {
+  transform: var(--e2);
+}
+.sq-e3 {
+  transform: var(--e3);
+}
+.sq-e4 {
+  transform: var(--e4);
+}
+.sq-e5 {
+  transform: var(--e5);
+}
+.sq-e6 {
+  transform: var(--e6);
+}
+.sq-e7 {
+  transform: var(--e7);
+}
+.sq-e8 {
+  transform: var(--e8);
+}
+.sq-f1 {
+  transform: var(--f1);
+}
+.sq-f2 {
+  transform: var(--f2);
+}
+.sq-f3 {
+  transform: var(--f3);
+}
+.sq-f4 {
+  transform: var(--f4);
+}
+.sq-f5 {
+  transform: var(--f5);
+}
+.sq-f6 {
+  transform: var(--f6);
+}
+.sq-f7 {
+  transform: var(--f7);
+}
+.sq-f8 {
+  transform: var(--f8);
+}
+.sq-g1 {
+  transform: var(--g1);
+}
+.sq-g2 {
+  transform: var(--g2);
+}
+.sq-g3 {
+  transform: var(--g3);
+}
+.sq-g4 {
+  transform: var(--g4);
+}
+.sq-g5 {
+  transform: var(--g5);
+}
+.sq-g6 {
+  transform: var(--g6);
+}
+.sq-g7 {
+  transform: var(--g7);
+}
+.sq-g8 {
+  transform: var(--g8);
+}
+.sq-h1 {
+  transform: var(--h1);
+}
+.sq-h2 {
+  transform: var(--h2);
+}
+.sq-h3 {
+  transform: var(--h3);
+}
+.sq-h4 {
+  transform: var(--h4);
+}
+.sq-h5 {
+  transform: var(--h5);
+}
+.sq-h6 {
+  transform: var(--h6);
+}
+.sq-h7 {
+  transform: var(--h7);
+}
+.sq-h8 {
+  transform: var(--h8);
+}
+
+.flipped.sq-a1 {
+  transform: var(--h8);
+}
+.flipped.sq-a2 {
+  transform: var(--h7);
+}
+.flipped.sq-a3 {
+  transform: var(--h6);
+}
+.flipped.sq-a4 {
+  transform: var(--h5);
+}
+.flipped.sq-a5 {
+  transform: var(--h4);
+}
+.flipped.sq-a6 {
+  transform: var(--h3);
+}
+.flipped.sq-a7 {
+  transform: var(--h2);
+}
+.flipped.sq-a8 {
+  transform: var(--h1);
+}
+.flipped.sq-b1 {
+  transform: var(--g8);
+}
+.flipped.sq-b2 {
+  transform: var(--g7);
+}
+.flipped.sq-b3 {
+  transform: var(--g6);
+}
+.flipped.sq-b4 {
+  transform: var(--g5);
+}
+.flipped.sq-b5 {
+  transform: var(--g4);
+}
+.flipped.sq-b6 {
+  transform: var(--g3);
+}
+.flipped.sq-b7 {
+  transform: var(--g2);
+}
+.flipped.sq-b8 {
+  transform: var(--g1);
+}
+.flipped.sq-c1 {
+  transform: var(--f8);
+}
+.flipped.sq-c2 {
+  transform: var(--f7);
+}
+.flipped.sq-c3 {
+  transform: var(--f6);
+}
+.flipped.sq-c4 {
+  transform: var(--f5);
+}
+.flipped.sq-c5 {
+  transform: var(--f4);
+}
+.flipped.sq-c6 {
+  transform: var(--f3);
+}
+.flipped.sq-c7 {
+  transform: var(--f2);
+}
+.flipped.sq-c8 {
+  transform: var(--f1);
+}
+.flipped.sq-d1 {
+  transform: var(--e8);
+}
+.flipped.sq-d2 {
+  transform: var(--e7);
+}
+.flipped.sq-d3 {
+  transform: var(--e6);
+}
+.flipped.sq-d4 {
+  transform: var(--e5);
+}
+.flipped.sq-d5 {
+  transform: var(--e4);
+}
+.flipped.sq-d6 {
+  transform: var(--e3);
+}
+.flipped.sq-d7 {
+  transform: var(--e2);
+}
+.flipped.sq-d8 {
+  transform: var(--e1);
+}
+.flipped.sq-e1 {
+  transform: var(--d8);
+}
+.flipped.sq-e2 {
+  transform: var(--d7);
+}
+.flipped.sq-e3 {
+  transform: var(--d6);
+}
+.flipped.sq-e4 {
+  transform: var(--d5);
+}
+.flipped.sq-e5 {
+  transform: var(--d4);
+}
+.flipped.sq-e6 {
+  transform: var(--d3);
+}
+.flipped.sq-e7 {
+  transform: var(--d2);
+}
+.flipped.sq-e8 {
+  transform: var(--d1);
+}
+.flipped.sq-f1 {
+  transform: var(--c8);
+}
+.flipped.sq-f2 {
+  transform: var(--c7);
+}
+.flipped.sq-f3 {
+  transform: var(--c6);
+}
+.flipped.sq-f4 {
+  transform: var(--c5);
+}
+.flipped.sq-f5 {
+  transform: var(--c4);
+}
+.flipped.sq-f6 {
+  transform: var(--c3);
+}
+.flipped.sq-f7 {
+  transform: var(--c2);
+}
+.flipped.sq-f8 {
+  transform: var(--c1);
+}
+.flipped.sq-g1 {
+  transform: var(--b8);
+}
+.flipped.sq-g2 {
+  transform: var(--b7);
+}
+.flipped.sq-g3 {
+  transform: var(--b6);
+}
+.flipped.sq-g4 {
+  transform: var(--b5);
+}
+.flipped.sq-g5 {
+  transform: var(--b4);
+}
+.flipped.sq-g6 {
+  transform: var(--b3);
+}
+.flipped.sq-g7 {
+  transform: var(--b2);
+}
+.flipped.sq-g8 {
+  transform: var(--b1);
+}
+.flipped.sq-h1 {
+  transform: var(--a8);
+}
+.flipped.sq-h2 {
+  transform: var(--a7);
+}
+.flipped.sq-h3 {
+  transform: var(--a6);
+}
+.flipped.sq-h4 {
+  transform: var(--a5);
+}
+.flipped.sq-h5 {
+  transform: var(--a4);
+}
+.flipped.sq-h6 {
+  transform: var(--a3);
+}
+.flipped.sq-h7 {
+  transform: var(--a2);
+}
+.flipped.sq-h8 {
+  transform: var(--a1);
+}
+
+/* .flipped { */
+/* transform: rotate(180deg); */
+/* } */
+
+.flipped-piece {
+  rotate: 180deg;
+  transform-origin: 50% 50%;
+}
