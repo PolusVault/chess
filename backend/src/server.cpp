@@ -86,11 +86,23 @@ void Server::run() {
             continue;
         }
         buf[bytes] = '\0';
-        this->http->process_request(buf, newfd);
-        // this->http->handle_request(request);
+
+        auto req = this->http->process_request(buf);
+
+        // auto handler = trie.find(req.path);
+        // if (handler) {
+        //     handler();
+        // } else {
+        //     404
+        // }
+        this->http->handle_request(req, newfd);
 
         close(newfd);
     }
 
     close(sockfd);
+}
+
+void Server::route(string path, int handler) {
+   // trie.insert(path, hanlder);
 }

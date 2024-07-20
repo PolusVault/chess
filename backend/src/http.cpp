@@ -2,13 +2,15 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <sys/socket.h>
 #include "http.h"
 #include "utils.h"
 using namespace std;
 
 HTTP::HTTP() {}
 
-void HTTP::process_request(char *buf, int newfd)
+// TODO: parse headers too
+http_request HTTP::process_request(char *buf)
 {
     string http_msg(buf);
     http_request request;
@@ -20,40 +22,91 @@ void HTTP::process_request(char *buf, int newfd)
     request.method = tokens[0];
     request.path = tokens[1];
 
-    // TODO: do this in handle_request
-    ifstream file("../index.html");
+    return request;
+}
+
+void HTTP::handle_request(http_request& req, int fd) {
+    // TODO: validate the paths
+    auto path_tokens = utils::split_str(req.path, "/");
+    string prefix = "../";
+    string filename = "index.html";
+
+    if (!path_tokens.empty()) {
+        filename = path_tokens.back();
+    }
+
+    string response;
+    http_builder builder;
+
+    ifstream file(prefix + filename);
     std::stringstream content;
+
     if (file.is_open()) {
         content << file.rdbuf();
+        string content_str = content.str();
+        response = builder.status(200)
+                       .body(content_str)
+                       .header("Content-Type: text/html")
+                       .header("Content-Length: " +
+                               std::to_string(content_str.size()));
     }
     else {
         std::cout << "can't open file" << endl;
+        string content_str = "404 Not Found";
+        response = builder.status(404)
+                       .body(content_str)
+                       .header("Content-Type: text/plain")
+                       .header("Content-Length: " +
+                               std::to_string(content_str.size()));
     }
 
-    string response =
-        static_cast<string>(*(this->status(200)->body("test")->header("test")));
-    
-    std::cout << response << endl;
+    int bytes = send(fd, response.data(), response.size(), 0);
+
+    if (bytes == -1) {
+        perror("send error");
+    }
 }
 
-HTTP::operator string() const {
-    return "test";
+http_builder::operator string() const
+{
+    string res = "";
+    string status_line = std::to_string(this->_status);
+
+    if (this->_status == 200) {
+        status_line += " OK";
+    }
+    else {
+        status_line += " Not Found";
+    }
+
+    res += this->_version + " " + status_line + "\r\n";
+
+    // why do need const?
+    for (const string &h : this->_headers) {
+        res += h + "\r\n";
+    }
+
+    res += "\n";
+    res += this->_body + "\r\n";
+    res += "\r\n";
+
+    return res;
 }
 
-HTTP *HTTP::status(int code)
+http_builder &http_builder::status(int code)
 {
     this->_status = code;
-    return this;
+    return *this;
 }
 
-HTTP *HTTP::body(string content)
+http_builder &http_builder::body(string content)
 {
     this->_body = content;
-    return this;
+    return *this;
 }
 
-HTTP *HTTP::header(string h)
+http_builder &http_builder::header(string h)
 {
     this->_headers.push_back(h);
-    return this;
+    return *this;
 }

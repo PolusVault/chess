@@ -10,4 +10,5 @@ class Server {
   public:
     Server(char const *port, int max_buf_size, int backlog = 10);
     void run();
+    void route(string path, int handler);
 };
