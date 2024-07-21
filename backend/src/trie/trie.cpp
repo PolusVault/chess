@@ -8,14 +8,15 @@ using namespace std;
 
 Trie::Trie(string root)
 {
-    this->root = new Node();
+    this->root = new Node(root);
 }
 
 // TODO: do this recursively
 void Trie::insert(string path, void *handler)
 {
     if (path == "/") {
-        // TODO
+        this->root->setValue(handler);
+        return;
     }
 
     auto path_segments = utils::split_str(path, "/");
@@ -45,6 +46,13 @@ void Trie::insert(string path, void *handler)
 
 Node *Trie::find(string path)
 {
+    if (path == "/") {
+        if (!this->root->isTerminal()) {
+            return nullptr;
+        }
+        return this->root;
+    }
+
     auto path_segments = utils::split_str(path, "/");
 
     Node *currentNode = this->root;
@@ -102,11 +110,12 @@ Node *Trie::_remove(Node *n, string targetPath, vector<string> &paths,
                     this->_remove(children[i], targetPath, paths, index + 1);
                 if (removed) {
                     // why can't we not do: children.erase(...) ??
-                    // children is just a reference to the original children, but for some reason
-                    // the changes are not reflected in the original one
+                    // children is just a reference to the original children,
+                    // but for some reason the changes are not reflected in the
+                    // original one
                     n->children.erase(n->children.begin() + i);
                 }
-                
+
                 if (n->children.empty() && !n->isTerminal()) {
                     delete n;
                     return n;
@@ -121,9 +130,15 @@ Node *Trie::_remove(Node *n, string targetPath, vector<string> &paths,
 
 void Trie::remove(string path)
 {
-    auto paths = utils::split_str(path, "/");
-    auto target = paths.back();
-    _remove(this->root, target, paths, 0);
+    if (path == "/") {
+        vector<string> paths = {"/"};
+        _remove(this->root, path, paths, 0);
+    }
+    else {
+        auto paths = utils::split_str(path, "/");
+        auto target = paths.back();
+        _remove(this->root, target, paths, 0);
+    }
 }
 
 void Trie::display(Node *n)
