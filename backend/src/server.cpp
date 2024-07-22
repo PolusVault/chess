@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "server.h"
 #include "http.h"
+#include "trie/trie.h"
 using namespace std;
 
 Server::Server(char const *port, int max_buf_size, int backlog)
@@ -13,10 +14,11 @@ Server::Server(char const *port, int max_buf_size, int backlog)
     this->port = port;
     this->backlog = backlog;
     this->max_buf_size = max_buf_size;
-    this->http = new HTTP();
+    this->router = new Trie("/");
 }
 
-void Server::run() {
+void Server::run()
+{
     int sockfd;
     addrinfo hints, *p, *serverinfo;
     sockaddr_storage client_addr;
@@ -31,7 +33,7 @@ void Server::run() {
     int status = getaddrinfo(nullptr, this->port, &hints, &serverinfo);
 
     if (status != 0) {
-        std::cout << "getaddrinfo error" << endl;
+        perror("getaddrinfo error");
         exit(EXIT_FAILURE);
     }
 
@@ -49,7 +51,7 @@ void Server::run() {
             exit(1);
         }
 
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        if (::bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             continue;
         }
 
@@ -62,7 +64,7 @@ void Server::run() {
     }
 
     if (listen(sockfd, this->backlog) == -1) {
-        std::cout << "listening error" << endl;
+        perror("listening error");
         exit(EXIT_FAILURE);
     }
 
@@ -80,22 +82,36 @@ void Server::run() {
         std::cout << "got a connection" << endl;
         char buf[this->max_buf_size];
 
-        int bytes = recv(newfd, buf, this->max_buf_size-1, 0);
+        int bytes = recv(newfd, buf, this->max_buf_size - 1, 0);
         if (bytes == -1) {
             perror("recv error");
             continue;
         }
         buf[bytes] = '\0';
 
-        auto req = this->http->process_request(buf);
+        auto req = this->process_request(buf);
+        auto route = this->router->find(req.path);
+        HTTP http(newfd, req);
 
-        // auto handler = trie.find(req.path);
-        // if (handler) {
-        //     handler();
-        // } else {
-        //     404
-        // }
-        this->http->handle_request(req, newfd);
+        if (route) {
+            auto route_handler = route->value;
+
+            if (route_handler) {
+                if (route->isWildcard) {
+                    req.param = route->wildcardContent;
+                }
+                route_handler(req, http);
+            }
+        }
+        else {
+            std::cout << "route not found: " << req.path << endl;
+            string response = http.not_found();
+            int bytes = send(newfd, response.data(), response.size(), 0);
+
+            if (bytes == -1) {
+                perror("send error");
+            }
+        }
 
         close(newfd);
     }
@@ -103,6 +119,23 @@ void Server::run() {
     close(sockfd);
 }
 
-void Server::route(string path, int handler) {
-   // trie.insert(path, hanlder);
+http_request Server::process_request(char *buf)
+{
+    string http_msg(buf);
+    http_request request;
+
+    auto lines = utils::split_str(http_msg, "\r\n");
+    auto tokens =
+        utils::split_str(lines[0], " "); // lines[0] is the http startline
+
+    request.method = tokens[0];
+    request.path = tokens[1];
+    request.param = "";
+
+    return request;
+}
+
+void Server::route(string path, Handler handler)
+{
+    this->router->insert(path, handler);
 }
