@@ -12,10 +12,10 @@ Trie::Trie(string root)
 }
 
 // TODO: do this recursively
-void Trie::insert(string path, void *handler)
+void Trie::insert(string path, Handler value)
 {
     if (path == "/") {
-        this->root->setValue(handler);
+        this->root->setValue(value);
         return;
     }
 
@@ -37,11 +37,14 @@ void Trie::insert(string path, void *handler)
             continue;
 
         auto newNode = new Node(p);
+        if (p=="*") {
+            newNode->isWildcard = true;
+        }
         currentNode->addChild(newNode);
         currentNode = newNode;
     }
 
-    currentNode->setValue(handler);
+    currentNode->setValue(value);
 }
 
 Node *Trie::find(string path)
@@ -60,12 +63,17 @@ Node *Trie::find(string path)
         bool found = false;
 
         for (auto c : currentNode->getChildren()) {
-            if (c->path == p && c->isTerminal()) {
+            // wildcards only work for the ending path for now
+            if (c->path == p || (c->isWildcard && p == path_segments.back())) {
+                if (c->isWildcard) {
+                    c->wildcardContent = p; 
+                }
                 currentNode = c;
                 found = true;
                 break;
             }
         }
+
         if (!found) {
             return nullptr;
         }
@@ -128,6 +136,8 @@ Node *Trie::_remove(Node *n, string targetPath, vector<string> &paths,
     return nullptr;
 }
 
+// we won't ever need to remove anything in our use case, I just wanted to
+// do this function for personal future reference 
 void Trie::remove(string path)
 {
     if (path == "/") {
@@ -155,15 +165,15 @@ void Trie::display(Node *n)
     }
 }
 
-Node::Node(string path, void *handler)
+Node::Node(string path, Handler value)
 {
     this->path = path;
-    this->handler = handler;
+    this->value = value;
 }
 
 bool Node::isTerminal()
 {
-    if (this->handler) {
+    if (this->value) {
         return true;
     }
 
@@ -180,7 +190,7 @@ vector<Node *> &Node::getChildren()
     return this->children;
 }
 
-void Node::setValue(void *n)
+void Node::setValue(Handler n)
 {
-    this->handler = n;
+    this->value = n;
 }
