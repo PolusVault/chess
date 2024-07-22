@@ -1,11 +1,13 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 using namespace std;
 
 struct http_request {
     string method;
     string path;
+    string param;
 };
 
 struct http_builder {
@@ -23,9 +25,14 @@ struct http_builder {
 };
 
 class HTTP {
-  public:
-    HTTP();
+    int fd;
+    http_request &req;
 
-    http_request process_request(char *);
-    void handle_request(http_request &, int);
+  public:
+    static std::map<string, string> mime_types;
+    HTTP(int fd, http_request &req);
+
+    string not_found();
+    void sendFile(string fileName);
+    void sendText(string text);
 };

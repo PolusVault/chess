@@ -7,64 +7,77 @@
 #include "utils.h"
 using namespace std;
 
-HTTP::HTTP() {}
+std::map<string, string> HTTP::mime_types = {
+    {"txt", "text/plain"},    {"html", "text/html"},
+    {"svg", "image/svg+xml"}, {"wasm", "application/wasm"},
+    {"css", "text/css"},      {"js", "text/javascript"}};
 
-// TODO: parse headers too
-http_request HTTP::process_request(char *buf)
+HTTP::HTTP(int sockfd, http_request &req) : req(req)
 {
-    string http_msg(buf);
-    http_request request;
-
-    auto lines = utils::split_str(http_msg, "\r\n");
-    auto tokens =
-        utils::split_str(lines[0], " "); // lines[0] is the http startline
-
-    request.method = tokens[0];
-    request.path = tokens[1];
-
-    return request;
+    this->fd = sockfd;
 }
 
-void HTTP::handle_request(http_request& req, int fd) {
+void HTTP::sendFile(string fileName)
+{
     // TODO: validate the paths
-    auto path_tokens = utils::split_str(req.path, "/");
     string prefix = "../";
-    string filename = "index.html";
-
-    if (!path_tokens.empty()) {
-        filename = path_tokens.back();
-    }
 
     string response;
     http_builder builder;
 
-    ifstream file(prefix + filename);
+    // ifstream file(prefix + fileName);
+    ifstream file(fileName);
     std::stringstream content;
+    string ext = utils::get_file_ext(fileName);
 
     if (file.is_open()) {
         content << file.rdbuf();
         string content_str = content.str();
         response = builder.status(200)
                        .body(content_str)
-                       .header("Content-Type: text/html")
+                       .header("Content-Type: " + HTTP::mime_types[ext])
                        .header("Content-Length: " +
                                std::to_string(content_str.size()));
     }
     else {
         std::cout << "can't open file" << endl;
-        string content_str = "404 Not Found";
-        response = builder.status(404)
-                       .body(content_str)
-                       .header("Content-Type: text/plain")
-                       .header("Content-Length: " +
-                               std::to_string(content_str.size()));
+        response = this->not_found();
     }
 
-    int bytes = send(fd, response.data(), response.size(), 0);
+    int bytes = send(this->fd, response.data(), response.size(), 0);
 
     if (bytes == -1) {
         perror("send error");
     }
+}
+
+void HTTP::sendText(string text)
+{
+    http_builder builder;
+    string response =
+        builder.status(200)
+            .body(text)
+            .header("Content-Type: text/plain")
+            .header("Content-Length: " + std::to_string(text.size()));
+
+    int bytes = send(this->fd, response.data(), response.size(), 0);
+
+    if (bytes == -1) {
+        perror("send error");
+    }
+}
+
+string HTTP::not_found()
+{
+    http_builder builder;
+
+    string content_str = "404 Not Found";
+    string response =
+        builder.status(404)
+            .body(content_str)
+            .header("Content-Type: text/plain")
+            .header("Content-Length: " + std::to_string(content_str.size()));
+    return response;
 }
 
 http_builder::operator string() const
