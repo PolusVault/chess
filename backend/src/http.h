@@ -8,6 +8,9 @@ struct http_request {
     string method;
     string path;
     string param;
+
+    std::map<string, string> headers;
+    bool isWebsocketHandshake;
 };
 
 struct http_builder {

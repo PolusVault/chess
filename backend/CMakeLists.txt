@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD 14)
 
 include_directories(.)
 
+set(OPENSSL_ROOT_DIR "/opt/homebrew/Cellar/openssl@3")
+find_package(OpenSSL REQUIRED)
+
 file(GLOB_RECURSE APP_SOURCES "src/*.cpp")
 file(GLOB_RECURSE TRIE_SOURCES "src/trie/*.cpp")
 add_executable(chess_backend
     ${APP_SOURCES} ${TRIE_SOURCES})
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)

@@ -1,24 +1,34 @@
 #include "server.h"
-#include "trie/trie.h"
+#include "src/http.h"
+#include <iostream>
 using namespace std;
 
 #define PORT "9034"
 #define BACKLOG 10
 #define MAX_BUF_SIZE 4096
 
+void root(http_request &req, HTTP &http)
+{
+    http.sendFile("../dist/index.html");
+}
+
+void root2(http_request &req, HTTP &http)
+{
+    http.sendFile("../dist/" + req.param);
+}
+
+void assets(http_request &req, HTTP &http)
+{
+    http.sendFile("../dist/assets/" + req.param);
+}
+
 int main()
 {
-    Trie a("/");
+    Server server(PORT, MAX_BUF_SIZE, BACKLOG);
 
-    a.insert("/about");
-    a.insert("/product");
-    a.insert("/product/entertainment");
-    a.insert("/product/entertainment/laptop");
+    server.route("/", &root);
+    server.route("/*", &root2);
+    server.route("/assets/*", &assets);
 
-    a.display();
-    // Server server(PORT, MAX_BUF_SIZE, BACKLOG);
-    //
-    // server.route("/", 0);
-    //
-    // server.run();
+    server.run();
 }

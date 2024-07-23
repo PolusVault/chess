@@ -1,0 +1,18 @@
+x incorporate trie into the server
+    x make a router that holds the trie
+x add a route to server index.html
+x learn about void*
+
+read about websocket protocol
+    implement a simple websocket
+
+
+use select()
+consider multithreading?
+
+
+x improve the signatures of handler
+x wildcard routes
+    x fix wild cards for intermediate routes
+x mime types
+add destructor to nodes

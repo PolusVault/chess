@@ -88,6 +88,9 @@ http_builder::operator string() const
     if (this->_status == 200) {
         status_line += " OK";
     }
+    else if (this->_status == 101) {
+        status_line += " Switching Protocols";
+    }
     else {
         status_line += " Not Found";
     }
@@ -99,8 +102,11 @@ http_builder::operator string() const
         res += h + "\r\n";
     }
 
-    res += "\n";
-    res += this->_body + "\r\n";
+    if (!this->_body.empty()) {
+        res += "\n";
+        res += this->_body + "\r\n";
+    }
+
     res += "\r\n";
 
     return res;
