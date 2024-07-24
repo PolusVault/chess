@@ -4,11 +4,14 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <bitset>
+#include <nlohmann/json.hpp>
 #include "openssl/sha.h"
 #include "server.h"
 #include "http.h"
 #include "trie/trie.h"
 using namespace std;
+using json = nlohmann::json;
 
 #define WEBSOCKET_UUID_STRING "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -20,12 +23,24 @@ Server::Server(char const *port, int max_buf_size, int backlog)
     this->router = new Trie("/");
 }
 
+union uint16_t_converter {
+    uint16_t i;
+    uint8_t c[2];
+};
+
+union uint64_t_converter {
+    uint64_t i;
+    uint8_t c[8];
+};
+
 // use https://github.com/zaphoyd/websocketpp/tree/master for reference
 class WebsocketFrame {
     unsigned char mask;
     uint64_t length;
 
   public:
+    string payload;
+
     WebsocketFrame(unsigned char *buf, int size)
     {
         if (size <= 0)
@@ -41,23 +56,19 @@ class WebsocketFrame {
 
         int mask_offset = 2;
 
-        if (this->length <= 125) {
-            // do nothing
-        }
-        else if (this->length == 126) {
-            this->length = (buf[2] << 8) + buf[3];
+        if (this->length == 126) {
+            // this->length = (buf[2] << 8) + buf[3];
+            uint16_t_converter temp;
+            std::copy(buf + 2, buf + 5, temp.c);
+            this->length = temp.i;
             mask_offset = 4;
         }
         else if (this->length == 127) {
-            // TODO
-            // this->length = buf[2] | buf[3] << 8 | buf[4] << 16 | buf[5] << 24
-            // |
-            //     buf[6] << 32 | buf[7] << 40 | buf[8] << 48 |
-            //                buf[9] << 56;
-        }
-        else {
-            std::cout << "error payload length" << endl;
-            // error?
+            // NOTE: how do we test this?
+            uint64_t_converter temp;
+            std::copy(buf + 2, buf + 10, temp.c);
+            this->length = temp.i;
+            mask_offset = 10;
         }
 
         std::cout << "LENGTH: " << this->length << endl;
@@ -72,6 +83,12 @@ class WebsocketFrame {
         }
         msgbuf[this->length] = '\0';
         std::cout << "MESSAGE: " << msgbuf << endl;
+
+        json temp = json::parse(msgbuf, msgbuf + this->length);
+        std::cout << temp["id"] << endl;
+
+        // TODO: create a message object from the json to use
+        // see notes.md for formats
     };
 };
 
@@ -181,12 +198,54 @@ void Server::run()
             int received = recv(newfd, buf, this->max_buf_size, 0);
 
             WebsocketFrame ws(buf, received);
-            // for (int i = 0; i < received; i++ ){
-            //     // read each byte
-            //     auto byte = buf[i];
-            //     std::cout << (int)byte << endl;
-            // }
+
+            char response_text[] = "hi";
+
+            // char or unsigned char shouldn't make a difference here
+            unsigned char response_buf[this->max_buf_size];
+            int bytes_writen = 0;
+
+            std::bitset<8> fin_and_opcodes;
+            fin_and_opcodes[7] = 1;
+            fin_and_opcodes[6] = 0;
+            fin_and_opcodes[5] = 0;
+            fin_and_opcodes[4] = 0;
+            // opcode bits
+            fin_and_opcodes[3] = 0;
+            fin_and_opcodes[2] = 0; // this is a text frame
+            fin_and_opcodes[1] = 0;
+            fin_and_opcodes[0] = 1;
+            // end opcode bits
+            std::bitset<8> mask_and_payloadlength;
+            // mask bit
+            mask_and_payloadlength[7] = 0;
+            // end mask bit
+            mask_and_payloadlength[6] = 0;
+            mask_and_payloadlength[5] = 0;
+            mask_and_payloadlength[4] = 0;
+            mask_and_payloadlength[3] = 0;
+            mask_and_payloadlength[2] = 0;
+            mask_and_payloadlength[1] = 1; // just hardcode to 2 bytes for now
+            mask_and_payloadlength[0] = 0;
+
+            response_buf[0] =
+                static_cast<unsigned char>(fin_and_opcodes.to_ulong());
+            response_buf[1] =
+                static_cast<unsigned char>(mask_and_payloadlength.to_ulong());
+            // response_buf[2] = 0;
+            // response_buf[3] = 0;
+            // response_buf[4] = 0;
+            // response_buf[5] = 0;
+            response_buf[2] = (unsigned char)response_text[0];
+            response_buf[3] = (unsigned char)response_text[1];
+
+            int bytes_sent = send(newfd, response_buf, 4, 0);
+            if (bytes_sent == -1) {
+                perror("byte sent error");
+                continue;
+            }
         }
+
         // auto route = this->router->find(req.path);
         // HTTP http(newfd, req);
         //

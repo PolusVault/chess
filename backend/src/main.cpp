@@ -1,5 +1,6 @@
 #include "server.h"
 #include "src/http.h"
+#include "trie/trie.h"
 #include <iostream>
 using namespace std;
 
@@ -24,11 +25,14 @@ void assets(http_request &req, HTTP &http)
 
 int main()
 {
-    Server server(PORT, MAX_BUF_SIZE, BACKLOG);
+    Trie trie("/");
 
-    server.route("/", &root);
-    server.route("/*", &root2);
-    server.route("/assets/*", &assets);
-
-    server.run();
+    trie.insert("/", &root);
+    // Server server(PORT, MAX_BUF_SIZE, BACKLOG);
+    //
+    // server.route("/", &root);
+    // server.route("/*", &root2);
+    // server.route("/assets/*", &assets);
+    //
+    // server.run();
 }
