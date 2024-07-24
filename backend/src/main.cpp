@@ -1,4 +1,4 @@
-#include "server.h"
+// #include "server.h"
 #include "trie/trie.h"
 using namespace std;
 
@@ -6,19 +6,15 @@ using namespace std;
 #define BACKLOG 10
 #define MAX_BUF_SIZE 4096
 
+void root(http_request &req, HTTP &http)
+{
+    http.sendFile("../dist/index.html");
+}
+
 int main()
 {
-    Trie a("/");
+    Trie trie("/");
 
-    a.insert("/about");
-    a.insert("/product");
-    a.insert("/product/entertainment");
-    a.insert("/product/entertainment/laptop");
-
-    a.display();
-    // Server server(PORT, MAX_BUF_SIZE, BACKLOG);
-    //
-    // server.route("/", 0);
-    //
-    // server.run();
+    trie.insert("/", &root);
+    // trie.insert("/home", whatever_function_goes_here);
 }
