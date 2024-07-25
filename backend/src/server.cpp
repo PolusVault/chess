@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <sys/types.h>
@@ -9,6 +10,7 @@
 #include "openssl/sha.h"
 #include "server.h"
 #include "http.h"
+#include "src/utils.h"
 #include "trie/trie.h"
 using namespace std;
 using json = nlohmann::json;
@@ -57,35 +59,36 @@ class WebsocketFrame {
         int mask_offset = 2;
 
         if (this->length == 126) {
-            // this->length = (buf[2] << 8) + buf[3];
             uint16_t_converter temp;
             std::copy(buf + 2, buf + 5, temp.c);
-            this->length = temp.i;
+            this->length = ntohs(temp.i);
             mask_offset = 4;
         }
         else if (this->length == 127) {
             // NOTE: how do we test this?
             uint64_t_converter temp;
             std::copy(buf + 2, buf + 10, temp.c);
+            // TODO: convert this to host byte order too
             this->length = temp.i;
             mask_offset = 10;
         }
 
-        std::cout << "LENGTH: " << this->length << endl;
-        char msgbuf[this->length];
+        // char msgbuf[this->length];
         unsigned char mask[4] = {buf[mask_offset], buf[mask_offset + 1],
                                  buf[mask_offset + 2], buf[mask_offset + 3]};
         int payload_offset = mask_offset + 4;
 
-        for (int i = 0; i < this->length; i++) {
-            // unmask the payload
-            msgbuf[i] = buf[payload_offset + i] ^ mask[i % 4];
-        }
-        msgbuf[this->length] = '\0';
-        std::cout << "MESSAGE: " << msgbuf << endl;
+        // for (int i = 0; i < this->length; i++) {
+        //     // unmask the payload
+        //     msgbuf[i] = buf[payload_offset + i] ^ mask[i % 4];
+        // }
+        // msgbuf[this->length] = '\0';
 
-        json temp = json::parse(msgbuf, msgbuf + this->length);
-        std::cout << temp["id"] << endl;
+        std::cout << "LENGTH: " << this->length << endl;
+        // std::cout << "MESSAGE: " << msgbuf << endl;
+        //
+        // json temp = json::parse(msgbuf, msgbuf + this->length);
+        // std::cout << temp["id"] << endl;
 
         // TODO: create a message object from the json to use
         // see notes.md for formats
@@ -199,47 +202,67 @@ void Server::run()
 
             WebsocketFrame ws(buf, received);
 
-            char response_text[] = "hi";
+            json json_response;
+            json_response["id"] = utils::create_uuid();
+            std::string json_str = json_response.dump();
 
-            // char or unsigned char shouldn't make a difference here
-            unsigned char response_buf[this->max_buf_size];
-            int bytes_writen = 0;
+            char response_buf[this->max_buf_size];
 
-            std::bitset<8> fin_and_opcodes;
-            fin_and_opcodes[7] = 1;
-            fin_and_opcodes[6] = 0;
-            fin_and_opcodes[5] = 0;
-            fin_and_opcodes[4] = 0;
-            // opcode bits
-            fin_and_opcodes[3] = 0;
-            fin_and_opcodes[2] = 0; // this is a text frame
-            fin_and_opcodes[1] = 0;
-            fin_and_opcodes[0] = 1;
-            // end opcode bits
-            std::bitset<8> mask_and_payloadlength;
-            // mask bit
-            mask_and_payloadlength[7] = 0;
-            // end mask bit
-            mask_and_payloadlength[6] = 0;
-            mask_and_payloadlength[5] = 0;
-            mask_and_payloadlength[4] = 0;
-            mask_and_payloadlength[3] = 0;
-            mask_and_payloadlength[2] = 0;
-            mask_and_payloadlength[1] = 1; // just hardcode to 2 bytes for now
-            mask_and_payloadlength[0] = 0;
+            uint8_t fin = 128;
+            uint8_t opcode = 1;
+            uint8_t fin_and_opcode = fin | opcode;
 
-            response_buf[0] =
-                static_cast<unsigned char>(fin_and_opcodes.to_ulong());
-            response_buf[1] =
-                static_cast<unsigned char>(mask_and_payloadlength.to_ulong());
-            // response_buf[2] = 0;
-            // response_buf[3] = 0;
-            // response_buf[4] = 0;
-            // response_buf[5] = 0;
-            response_buf[2] = (unsigned char)response_text[0];
-            response_buf[3] = (unsigned char)response_text[1];
+            uint8_t mask = 0;
+            uint64_t payload_len = json_str.size();
+            uint8_t pl;
+            // we doing the same thing we did when we process the websocket
+            // frame, just backwards this time
+            if (payload_len <= 125) {
+                pl = static_cast<uint8_t>(payload_len);
+            }
+            else if (payload_len <= 65535) { // 2^16
+                pl = 126;
+            }
+            else { // <= 2^63
+                pl = 127;
+            }
+            uint8_t mask_and_payloadlen = mask | pl;
 
-            int bytes_sent = send(newfd, response_buf, 4, 0);
+            response_buf[0] = fin_and_opcode;
+            response_buf[1] = mask_and_payloadlen;
+
+            int bytes_written = 2;
+            int payload_len_offset = 2;
+            if (payload_len <= 125) {
+            }
+            else if (payload_len <= 65535) {
+                uint16_t_converter temp;
+                temp.i = htons(payload_len);
+                response_buf[2] = temp.c[0];
+                response_buf[3] = temp.c[1];
+                bytes_written += 2;
+                payload_len_offset = 4;
+            }
+            else { // MUST be <= 2^63 (the most sig. bit is 0)
+                uint64_t_converter temp;
+                temp.i = utils::_htonll(payload_len);
+                response_buf[2] = temp.c[0];
+                response_buf[3] = temp.c[1];
+                response_buf[4] = temp.c[2];
+                response_buf[5] = temp.c[3];
+                response_buf[6] = temp.c[4];
+                response_buf[7] = temp.c[5];
+                response_buf[8] = temp.c[6];
+                response_buf[9] = temp.c[7];
+                bytes_written += 8;
+                payload_len_offset = 10;
+            }
+
+            std::copy(json_str.begin(), json_str.end(),
+                      response_buf + payload_len_offset);
+
+            int bytes_sent =
+                send(newfd, response_buf, bytes_written + json_str.size(), 0);
             if (bytes_sent == -1) {
                 perror("byte sent error");
                 continue;

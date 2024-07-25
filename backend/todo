@@ -4,7 +4,9 @@ x add a route to server index.html
 x learn about void*
 
 read about websocket protocol
-    implement a simple websocket
+    x implement a simple websocket
+    x json strings as response
+    create a unique id for each connection
 
 
 use select()

@@ -7,9 +7,10 @@ class Server {
     char const *port;
     int backlog;
     int max_buf_size;
-    Trie* router;
+    Trie *router;
 
-    http_request process_request(char* buf);
+    http_request process_request(char *buf);
+
   public:
     Server(char const *port, int max_buf_size, int backlog = 10);
     void run();
