@@ -10,6 +10,8 @@ class Server {
     Trie *router;
 
     http_request process_request(char *buf);
+    void handle_http(int fd);
+    void handle_websocket(int fd);
 
   public:
     Server(char const *port, int max_buf_size, int backlog = 10);

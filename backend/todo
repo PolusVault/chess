@@ -6,11 +6,12 @@ x learn about void*
 read about websocket protocol
     x implement a simple websocket
     x json strings as response
-    create a unique id for each connection
+     create a unique id for each connection
+    x create websocket files
+    x let http.cpp handle the websocket req/res
+    handle disconnections
 
 
-use select()
-consider multithreading?
 
 
 x improve the signatures of handler
@@ -18,3 +19,5 @@ x wildcard routes
     x fix wild cards for intermediate routes
 x mime types
 add destructor to nodes
+
+consider multithreading?

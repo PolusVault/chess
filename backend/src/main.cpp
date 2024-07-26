@@ -2,7 +2,6 @@
 #include "src/http.h"
 #include "trie/trie.h"
 #include "nlohmann/json.hpp"
-#include <_types/_uint8_t.h>
 #include <algorithm>
 #include <iostream>
 #include <sys/_endian.h>
@@ -27,11 +26,6 @@ void assets(http_request &req, HTTP &http)
 {
     http.sendFile("../dist/assets/" + req.param);
 }
-
-union uint16_t_converter {
-    uint16_t i;
-    uint8_t c[2];
-};
 
 int main()
 {

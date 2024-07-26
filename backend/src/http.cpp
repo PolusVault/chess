@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <sys/socket.h>
+#include "openssl/sha.h"
 #include "http.h"
 #include "utils.h"
 using namespace std;
@@ -77,6 +78,28 @@ string HTTP::not_found()
             .body(content_str)
             .header("Content-Type: text/plain")
             .header("Content-Length: " + std::to_string(content_str.size()));
+    return response;
+}
+
+string HTTP::websocket_handshake()
+{
+    string key = req.headers["Sec-WebSocket-Key"] + WEBSOCKET_UUID_STRING;
+    // convert string to unsigned char
+    std::vector<unsigned char> vec(key.begin(), key.end());
+    const unsigned char *str = vec.data();
+
+    unsigned char hash[SHA_DIGEST_LENGTH]; // == 20
+
+    SHA1(str, vec.size(), hash);
+
+    string base64_key = utils::base64_encode(hash, SHA_DIGEST_LENGTH);
+
+    http_builder builder;
+
+    string response = builder.status(101)
+                          .header("Upgrade: websocket")
+                          .header("Connection: Upgrade")
+                          .header("Sec-WebSocket-Accept: " + base64_key);
     return response;
 }
 

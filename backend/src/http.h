@@ -36,6 +36,7 @@ class HTTP {
     HTTP(int fd, http_request &req);
 
     string not_found();
+    string websocket_handshake();
     void sendFile(string fileName);
     void sendText(string text);
 };

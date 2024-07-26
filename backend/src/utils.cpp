@@ -41,7 +41,7 @@ string utils::create_uuid(int len)
     static mt19937 rng(dev());
 
     const char *v = "0123456789abcdef";
-    uniform_int_distribution<int> dist(0, strlen(v)-1);
+    uniform_int_distribution<int> dist(0, strlen(v) - 1);
 
     string res;
     for (int i = 0; i < len; i++) {
@@ -110,7 +110,8 @@ std::string utils::base64_encode(unsigned char const *bytes_to_encode,
  * @param src The integer in host byte order
  * @return src converted to network byte order
  */
-uint64_t utils::_htonll(uint64_t src) {
+uint64_t utils::_htonll(uint64_t src)
+{
     static int typ = TYP_INIT;
     unsigned char c;
     union {
@@ -124,19 +125,27 @@ uint64_t utils::_htonll(uint64_t src) {
     if (typ == TYP_BIGE)
         return src;
     x.ull = src;
-    c = x.c[0]; x.c[0] = x.c[7]; x.c[7] = c;
-    c = x.c[1]; x.c[1] = x.c[6]; x.c[6] = c;
-    c = x.c[2]; x.c[2] = x.c[5]; x.c[5] = c;
-    c = x.c[3]; x.c[3] = x.c[4]; x.c[4] = c;
+    c = x.c[0];
+    x.c[0] = x.c[7];
+    x.c[7] = c;
+    c = x.c[1];
+    x.c[1] = x.c[6];
+    x.c[6] = c;
+    c = x.c[2];
+    x.c[2] = x.c[5];
+    x.c[5] = c;
+    c = x.c[3];
+    x.c[3] = x.c[4];
+    x.c[4] = c;
     return x.ull;
-} 
-
+}
 
 /// Convert 64 bit value to host byte order
 /**
  * @param src The integer in network byte order
  * @return src converted to host byte order
  */
-uint64_t utils::_ntohll(uint64_t src) {
+uint64_t utils::_ntohll(uint64_t src)
+{
     return _htonll(src);
 }
