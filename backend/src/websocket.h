@@ -13,11 +13,6 @@ struct Data {
     json payload;
 };
 
-struct WsConn {
-    string ip;
-    int fd;
-};
-
 Data parse_frame(unsigned char *buf);
 char *create_frame(string payload);
 char *create_close_frame();
