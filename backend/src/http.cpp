@@ -6,7 +6,9 @@
 #include "openssl/sha.h"
 #include "http.h"
 #include "utils.h"
-using namespace std;
+#include "network.h"
+
+using std::string;
 
 std::map<string, string> HTTP::mime_types = {
     {"txt", "text/plain"},    {"html", "text/html"},
@@ -27,7 +29,7 @@ void HTTP::sendFile(string fileName)
     http_builder builder;
 
     // ifstream file(prefix + fileName);
-    ifstream file(fileName);
+    std::ifstream file(fileName);
     std::stringstream content;
     string ext = utils::get_file_ext(fileName);
 
@@ -41,7 +43,6 @@ void HTTP::sendFile(string fileName)
                                std::to_string(content_str.size()));
     }
     else {
-        std::cout << "can't open file" << endl;
         response = this->not_found();
     }
 
@@ -83,7 +84,7 @@ string HTTP::not_found()
 
 string HTTP::websocket_handshake()
 {
-    string key = req.headers["Sec-WebSocket-Key"] + WEBSOCKET_UUID_STRING;
+    string key = req.headers["Sec-WebSocket-Key"] + network::WEBSOCKET_UUID_STRING;
     // convert string to unsigned char
     std::vector<unsigned char> vec(key.begin(), key.end());
     const unsigned char *str = vec.data();

@@ -6,12 +6,13 @@ x learn about void*
 read about websocket protocol
     x implement a simple websocket
     x json strings as response
-     create a unique id for each connection
     x create websocket files
     x let http.cpp handle the websocket req/res
-    handle disconnections
+    create a unique id for each connection
+    x handle disconnections
 
 
+update message formats for status and responses
 
 
 x improve the signatures of handler

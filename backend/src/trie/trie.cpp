@@ -12,7 +12,7 @@ Trie::Trie(string root)
 }
 
 // TODO: do this recursively
-void Trie::insert(string path, Handler value)
+void Trie::insert(string path, RouteHandler value)
 {
     if (path == "/") {
         this->root->setValue(value);
@@ -165,7 +165,7 @@ void Trie::display(Node *n)
     }
 }
 
-Node::Node(string path, Handler value)
+Node::Node(string path, RouteHandler value)
 {
     this->path = path;
     this->value = value;
@@ -190,7 +190,7 @@ vector<Node *> &Node::getChildren()
     return this->children;
 }
 
-void Node::setValue(Handler n)
+void Node::setValue(RouteHandler n)
 {
     this->value = n;
 }

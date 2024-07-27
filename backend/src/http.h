@@ -2,7 +2,8 @@
 #include <string>
 #include <vector>
 #include <map>
-using namespace std;
+
+using std::string;
 
 struct http_request {
     string method;

@@ -2,9 +2,9 @@
 #include "utils.h"
 #include "assert.h"
 
-vector<string> utils::split_str(string &str, string delimiters)
+std::vector<string> utils::split_str(string &str, string delimiters)
 {
-    vector<string> tokens;
+    std::vector<string> tokens;
 
     string token = "";
     for (char &c : str) {
@@ -30,18 +30,16 @@ string utils::get_file_ext(string &filename)
 {
     auto tokens = utils::split_str(filename, ".");
 
-    assert(tokens.size() == 2 && "Incorrect file name format");
-
     return tokens.back();
 }
 
 string utils::create_uuid(int len)
 {
-    static random_device dev;
-    static mt19937 rng(dev());
+    static std::random_device dev;
+    static std::mt19937 rng(dev());
 
     const char *v = "0123456789abcdef";
-    uniform_int_distribution<int> dist(0, strlen(v) - 1);
+    std::uniform_int_distribution<int> dist(0, strlen(v) - 1);
 
     string res;
     for (int i = 0; i < len; i++) {
