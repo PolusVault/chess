@@ -3,4 +3,4 @@ def success(data=None):
 
 
 def error(reason=None):
-    return {"status": False, "reason": reason}
+    return {"success": False, "reason": reason}

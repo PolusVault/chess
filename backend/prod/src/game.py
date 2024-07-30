@@ -24,7 +24,7 @@ def create_room():
     room_id = GameState.create_room(request.sid)
     room = GameState.join_room(room_id, request.sid)
 
-    if room and room_id:
+    if room:
         join_room(room_id)
         return success(room_id)
     else:
@@ -60,3 +60,8 @@ def make_move(data):
     socketio.emit("make-move", content, include_self=False, to=room_id)
 
     return success()
+
+
+@socketio.on_error()  # Handles the default namespace
+def error_handler(e):
+    return error(str(e))
