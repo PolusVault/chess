@@ -27,7 +27,6 @@ def create_room():
     if room is None:
         raise RuntimeError("unable to create room")
 
-    join_room(room_id)
     return success(room_id)
 
 
@@ -39,7 +38,6 @@ def join_game(data):
     if room is None:
         raise RuntimeError("unable to join room")
 
-    join_room(room_id)
     return success(room.get_players_info())
 
 

@@ -1,6 +1,6 @@
 import shortuuid
 from flask import request
-from flask_socketio import rooms, leave_room, close_room
+from flask_socketio import rooms, leave_room, close_room, join_room
 
 
 class Client:
@@ -104,6 +104,8 @@ class _GameState:
             return None
 
         room.add_player(client)
+
+        join_room(room_id)
 
         return room
 
