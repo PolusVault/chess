@@ -1,9 +1,9 @@
 # type: ignore
 
 from flask import Blueprint, request
-from flask_socketio import leave_room, join_room, close_room
+from flask_socketio import join_room
 from . import socketio
-from .core import GameState, Client, ClientsManager
+from .core import GameState
 from .utils import success, error
 
 game = Blueprint("game", __name__)
@@ -11,21 +11,18 @@ game = Blueprint("game", __name__)
 
 @socketio.on("connect")
 def connect():
-    ClientsManager.new_client()
+    GameState.new_client(request.sid)
 
 
 @socketio.on("disconnect")
 def disconnect():
-    GameState.disconnect_player()
-    ClientsManager.remove_client()
+    GameState.disconnect_player(request.sid)
 
 
 @socketio.on("create-game")
 def create_room():
     room_id = GameState.create_room(request.sid)
-    client = ClientsManager.get_client()
-
-    room = GameState.join_room(room_id, client)
+    room = GameState.join_room(room_id, request.sid)
 
     if room and room_id:
         join_room(room_id)
@@ -37,9 +34,7 @@ def create_room():
 @socketio.on("join-game")
 def join_game(data):
     room_id = data["room_id"]
-    client = ClientsManager.get_client()
-
-    room = GameState.join_room(room_id, client)
+    room = GameState.join_room(room_id, request.sid)
 
     if room:
         join_room(room_id)
@@ -51,10 +46,6 @@ def join_game(data):
 @socketio.on("leave-game")
 def leave_game(data):
     room_id = data["room_id"]
-    room = GameState.get_room(room_id)
-
-    if room is None:
-        return error("unable to leave room")
 
     GameState.leave_room(room_id, request.sid)
 
