@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess</title>
+    <!-- <script type="module" crossorigin src="/assets/index-851eaea9.js"></script>
+    <link rel="stylesheet" href="/assets/index-97a174e8.css" /> -->
+  </head>
+  <body>
+    <div id="root">
+      <button id="create">create room</button>
+      <input id="textbox" type="text" />
+      <button id="join">join room</button>
+      <input id="msg-input" type="text" />
+      <button id="send">send</button>
+    </div>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+      integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript" charset="utf-8">
+      const create_btn = document.getElementById("create");
+      const join_btn = document.getElementById("join");
+      const input = document.getElementById("textbox");
+      const send_btn = document.getElementById("send");
+      const chat_input = document.getElementById("msg-input");
+
+      const socket = io("/", {
+        path: "/chess/socket",
+      });
+
+      socket.on("connect", function () {
+        console.log("connected to socket", socket.id);
+      });
+      socket.on("message", function (message) {
+        console.log(message);
+      });
+      socket.on("make-move", function (message) {
+        console.log("move", message);
+      });
+
+      function create_room() {
+        if (!socket.connected) {
+          return;
+        }
+
+        socket.emit("create-game", (res) => {
+          console.log("created game", res);
+          navigator.clipboard.writeText(res.data);
+          console.log("copied game id to clippboard");
+        });
+      }
+
+      function join_room() {
+        if (!socket.connected) {
+          return;
+        }
+
+        socket.emit(
+          "join-game",
+          {
+            room_id: input.value,
+          },
+          (res) => {
+            console.log("joined game", res);
+          }
+        );
+      }
+
+      function send_msg() {
+        if (!socket.connected) {
+          return;
+        }
+        socket.emit(
+          "make-move",
+          {
+            room_id: input.value,
+            content: chat_input.value,
+          },
+          (res) => {
+            console.log("message", res);
+          }
+        );
+      }
+
+      create_btn.addEventListener("click", create_room);
+      join_btn.addEventListener("click", join_room);
+      send_btn.addEventListener("click", send_msg);
+    </script>
+  </body>
+</html>
