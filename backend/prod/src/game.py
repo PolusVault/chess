@@ -24,11 +24,11 @@ def create_room():
     room_id = GameState.create_room(request.sid)
     room = GameState.join_room(room_id, request.sid)
 
-    if room:
-        join_room(room_id)
-        return success(room_id)
-    else:
-        return error("unable to create room")
+    if room is None:
+        raise RuntimeError("unable to create room")
+
+    join_room(room_id)
+    return success(room_id)
 
 
 @socketio.on("join-game")
@@ -36,11 +36,11 @@ def join_game(data):
     room_id = data["room_id"]
     room = GameState.join_room(room_id, request.sid)
 
-    if room:
-        join_room(room_id)
-        return success(room.get_players_info())
-    else:
-        return error("unable to join room")
+    if room is None:
+        raise RuntimeError("unable to join room")
+
+    join_room(room_id)
+    return success(room.get_players_info())
 
 
 @socketio.on("leave-game")
