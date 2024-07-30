@@ -2,12 +2,16 @@
 #include <string>
 #include <vector>
 #include <map>
-using namespace std;
+
+using std::string;
 
 struct http_request {
     string method;
     string path;
     string param;
+
+    std::map<string, string> headers;
+    bool isWebsocketHandshake;
 };
 
 struct http_builder {
@@ -33,6 +37,7 @@ class HTTP {
     HTTP(int fd, http_request &req);
 
     string not_found();
+    string websocket_handshake();
     void sendFile(string fileName);
     void sendText(string text);
 };

@@ -1,0 +1,3 @@
+.venv
+*.prod.*
+__pycache__/

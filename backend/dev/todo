@@ -1,0 +1,24 @@
+x incorporate trie into the server
+    x make a router that holds the trie
+x add a route to server index.html
+x learn about void*
+
+read about websocket protocol
+    x implement a simple websocket
+    x json strings as response
+    x create websocket files
+    x let http.cpp handle the websocket req/res
+    create a unique id for each connection
+    x handle disconnections
+
+
+update message formats for status and responses
+
+
+x improve the signatures of handler
+x wildcard routes
+    x fix wild cards for intermediate routes
+x mime types
+add destructor to nodes
+
+consider multithreading?
