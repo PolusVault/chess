@@ -11,6 +11,7 @@ use crate::utils;
 pub struct MoveGen;
 
 impl MoveGen {
+    // TODO: movegen should not modify game state
     pub fn moves_for_square(state: &mut GameState, sq: Square) -> Vec<Move> {
         let board = &state.board;
 

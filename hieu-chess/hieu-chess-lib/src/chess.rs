@@ -995,13 +995,43 @@ pub struct Chess {
 
 impl Chess {
     pub fn new() -> Self {
-        Self {
-            state: GameState::new(),
-        }
+        let default_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let mut state = GameState::new();
+        state.load_fen(default_fen);
+
+        Self { state }
     }
 
     pub fn play_move(&mut self, m: Move) -> Result<(), Error> {
         Ok(self.state.play_move(m)?)
+    }
+
+    pub fn moves_for_square(&mut self, sq: Square) -> Vec<Move> {
+        MoveGen::moves_for_square(&mut self.state, sq)
+    }
+
+    pub fn is_draw(&mut self) -> bool {
+        self.state.is_draw()
+    }
+
+    pub fn is_stalemate(&mut self) -> bool {
+        self.state.is_stalemate()
+    }
+
+    pub fn is_threefold_repetition(&mut self) -> bool {
+        self.state.is_threefold_repetition()
+    }
+
+    pub fn is_50_moves(&self) -> bool {
+        self.state.is_50_moves()
+    }
+
+    pub fn is_insufficient_material(&self) -> bool {
+        self.state.is_insufficient_material()
+    }
+
+    pub fn is_checkmate(&mut self) -> bool {
+        self.state.is_checkmate()
     }
 
     pub fn load_fen(&mut self, fen: &str) -> Result<(), Error> {

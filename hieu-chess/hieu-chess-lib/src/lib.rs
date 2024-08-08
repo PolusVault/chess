@@ -8,5 +8,6 @@ mod square;
 mod utils;
 
 pub use chess::{Chess, Color, Move};
+pub use error::Error;
 pub use piece::{PType, Piece};
 pub use square::{File, Rank, Square};

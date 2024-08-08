@@ -7,4 +7,5 @@ authors = ["Hieu <hieunguyen.0527@gmail.com>"]
 license = "MIT"
 
 [dependencies]
+serde = "1.0.205"
 thiserror = "1.0.63"
