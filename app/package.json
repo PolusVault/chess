@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "friendly-chess-wasm": "file:../../friendly-chess-workspace/friendly-chess-wasm/pkg",
+    "friendly-chess-wasm": "file:../friendly-chess-workspace/friendly-chess-wasm/pkg",
     "react": "^18.2.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
