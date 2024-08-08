@@ -2,6 +2,9 @@
 name = "hieu-chess"
 version = "0.1.0"
 edition = "2021"
+description = "a simple chess library that handles move generations, move validation, board representation and piece placements"
+authors = ["Hieu <hieunguyen.0527@gmail.com>"]
+license = "MIT"
 
 [dependencies]
 thiserror = "1.0.63"
