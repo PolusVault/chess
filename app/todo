@@ -1,0 +1,8 @@
+[done] implement game status (losing, winning, draw)
+better error handling
+refactor the socket code and types
+make a server-client message protocol
+
+[done] make it mobile-friendly
+
+handle game finished server side

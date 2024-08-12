@@ -1034,6 +1034,10 @@ impl Chess {
         self.state.is_checkmate()
     }
 
+    pub fn reset(&mut self) {
+        self.state.reset();
+    }
+
     pub fn load_fen(&mut self, fen: &str) -> Result<(), Error> {
         self.state.load_fen(fen);
 

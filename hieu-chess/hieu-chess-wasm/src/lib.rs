@@ -29,7 +29,23 @@ impl ChessWasm {
         self.chess.get_board_ptr()
     }
 
-    pub fn play_move(&mut self) {}
+    pub fn play_move(&mut self, m: JsValue) -> Result<(), JsError> {
+        let player_move: Move = serde_wasm_bindgen::from_value(m).unwrap();
+
+        let promotion_piece: Option<Piece> = match player_move.promotion_piece {
+            Some(p) => Some(p.as_str().try_into()?),
+            None => None,
+        };
+
+        match self.chess.play_move(hieu_chess::Move::from_str(
+            &player_move.from,
+            &player_move.to,
+            promotion_piece,
+        )) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(JsError::new(&e.to_string())),
+        }
+    }
 
     pub fn moves_for_square(&mut self, sq_str: String) -> Result<JsValue, JsError> {
         let square: Square = match sq_str.as_str().try_into() {
@@ -52,6 +68,10 @@ impl ChessWasm {
             .collect();
 
         Ok(serde_wasm_bindgen::to_value(&moves)?)
+    }
+
+    pub fn reset(&mut self) {
+        self.chess.reset();
     }
 
     pub fn is_checkmate(&mut self) -> bool {
