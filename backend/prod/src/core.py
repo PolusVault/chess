@@ -56,6 +56,7 @@ class Room:
             return False
 
         if color is None:
+            # assign the player to the first color available
             for c, p in self.players.items():
                 if p is None:
                     self.players[c] = player
@@ -104,11 +105,11 @@ class _GameState:
         return self.__rooms.get(room_id)
 
     def create_room(self, client_id, name=None) -> str:
-        """
-        create a new room \n
-        @param client_id: str - the id of the requesting client
-        @param name: str - the name of the client, if any
-        @return room_id: str - the id of the room created
+        """create a new room
+
+        :param client_id: str - the id of the requesting client
+        :param name: str - the name of the client, if any
+        :return room_id: str - the id of the room created
         """
         client = self.get_client(client_id)
 
@@ -133,10 +134,10 @@ class _GameState:
         return room_id
 
     def remove_room(self, id) -> bool:
-        """
-        attemp to delete a room, it provides no authorization so do not use it outside of this class
-        @param id: str - the room id
-        @return True if successful, False otherwise
+        """attemp to delete a room, it provides no authorization so do not use it outside of this class
+
+        :param id: str - the room id
+        :return bool: True if successful, False otherwise
         """
         try:
             del self.__rooms[id]
@@ -146,12 +147,12 @@ class _GameState:
 
     def join_room(
         self, room_id, client_id, name=None, color=None, role="player"
-    ) -> Room | None:
-        """
-        join an existing room
-        @param room_id: str - the room id
-        @param client_id: str - the client id
-        @return Room (the room information) if the room exist, None if the room doesn't exist or is full
+    ) -> Room:
+        """join an existing room
+
+        :param room_id: str - the room id
+        :param client_id: str - the client id
+        :return room: the room information
         """
         client = self.get_client(client_id)
 
@@ -164,18 +165,21 @@ class _GameState:
         room = self.get_room(room_id)
 
         if room is None or room.is_full():
-            return None
+            raise Exception("unable to join room")
+            # return None
 
-        room.add_player(client, color)
+        # this condition should never happens
+        if room.add_player(client, color) is False:
+            raise Exception("unable to join room")
 
         return room
 
-    def leave_room(self, room_id, client_id) -> Room:
-        """
-        leave an existing room
-        @param room_id: str - the room id
-        @param client_id: str - the client id
-        @return None
+    def leave_room(self, room_id, client_id):
+        """leave an existing room
+
+        :param room_id: str - the room id
+        :param client_id: str - the client id
+        :return tuple: room info, player info
         """
         room = self.get_room(room_id)
         client = self.get_client(client_id)
@@ -185,21 +189,27 @@ class _GameState:
         elif room is None:
             raise Exception("leave room: room doesn't exist")
 
+        # get player info before we remove them from the room
+        player = room.get_player(client_id)
+        if player is None:
+            raise Exception("why are you none?")
+
         room.remove_player(client_id)
 
         if room.is_empty():
             self.remove_room(room_id)
 
-        return room
+        return (room, player)
 
+    # don't use this method in tests
     def disconnect_player(self, client_id):
         for room_id in rooms():
             if room_id == client_id:  # skip the default room
                 continue
-            room = self.leave_room(room_id, client_id)
+            room, player = self.leave_room(room_id, client_id)
             emit(
                 "opponent-disconnected",
-                room.get_player(client_id),
+                player,
                 to=room.id,
                 include_self=False,
             )

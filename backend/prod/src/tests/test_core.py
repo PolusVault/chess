@@ -93,12 +93,12 @@ def test_GameState():
     assert room.player_ids == [1, 3]
 
     client4 = GameState.new_client(4)
-    room = GameState.join_room(room_id, client4.id, "fuz")  # room is full
-    room2 = GameState.join_room(
-        "non existent room id", client4.id, "fuz"
-    )  # room doesn't exist
-    assert room == None
-    assert room2 == None
+    with pytest.raises(Exception):
+        GameState.join_room(room_id, client4.id, "fuz")  # room is full
+    with pytest.raises(Exception):
+        GameState.join_room(
+            "non existent room id", client4.id, "fuz"
+        )  # room doesn't exist
 
     GameState.reset()
     client = GameState.new_client(0)
@@ -112,14 +112,17 @@ def test_GameState():
     with pytest.raises(Exception):
         GameState.leave_room(room_id, "non existent client id")
 
-    room = GameState.leave_room(room_id, client.id)
+    room, player = GameState.leave_room(room_id, client.id)
     assert room.id == room_id
+    assert player["color"] == "b"
+    assert player["name"] == "new client name"
     assert GameState.get_room(room_id).get_player(client.id) == None
     assert GameState.get_room(room_id).get_player(client2.id) == {
         "color": "w",
         "name": "new client2 name",
     }
 
-    room = GameState.leave_room(room_id, client2.id)
+    room, player = GameState.leave_room(room_id, client2.id)
     assert room.id == room_id
+    assert player["color"] == "w"
     assert GameState.get_room(room.id) == None

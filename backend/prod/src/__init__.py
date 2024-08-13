@@ -11,10 +11,11 @@ logger = logging.getLogger("werkzeug")
 logger.setLevel(logging.WARNING)
 
 
-def create_app(test_config=None):
+def create_app(is_testing=False):
     app = Flask(__name__, instance_relative_config=True)
 
     app.config.from_file("config.dev.toml", load=tomllib.load, text=False)
+    app.config.update(TESTING=is_testing)
     app.config.from_file("config.prod.toml", load=tomllib.load, text=False, silent=True)
 
     try:
