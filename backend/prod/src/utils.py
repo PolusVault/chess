@@ -17,6 +17,7 @@ def is_prod_env():
     return os.environ.get("ENV") == "PROD"
 
 
+# don't use this function outside of a request context
 def get_ip():
     ip = None
 

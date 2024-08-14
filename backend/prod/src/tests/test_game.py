@@ -1,14 +1,19 @@
-from .. import create_app, socketio
-from ..core import GameState
 import logging
+import pytest
+from .. import create_app, socketio
 
-app = create_app(is_testing=True)
+app, config = create_app(is_testing=True)
+
+from ..game import IP_Limiter, RateLimiter, GameState
 
 
 def test_create_game(caplog):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARNING)
+
     client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
     assert client.is_connected() == True
+
+    RateLimiter.disable()
 
     ack = client.emit(
         "create-game", {"payload": {"color": "w", "name": "hieu"}}, callback=True
@@ -30,11 +35,14 @@ def test_create_game(caplog):
 
     assert "success" not in ack and "payload" not in ack
     assert ack == []
+    assert client.is_connected() == False
 
+    RateLimiter.enable()
     GameState.reset()
 
 
 def test_join_game(caplog):
+    caplog.set_level(logging.WARNING)
     client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
     client2 = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
 
@@ -85,19 +93,80 @@ def test_leave_game():
     GameState.reset()
 
 
-# def test_ratelimit(caplog):
-#     caplog.set_level(logging.DEBUG)
-#     client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
-#     for i in range(10):
-#         if client.is_connected():
-#             client.emit(
-#                 "make-move",
-#                 {"payload": {"room_id": "id", "move": {"from": "a3", "to": "b1"}}},
-#             )
-# try:
-# except:
-#     if not client.is_connected():
-#         print("NOT CONNECTED")
-#         client.connect()
-# client2 = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
-# assert client2.is_connected() == False
+def test_badinput():
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    ack = client.emit(
+        "create-game", {"payload": {"color": "white", "name": "hieu"}}, callback=True
+    )
+    assert ack == []
+    assert client.is_connected() == False
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    assert client.is_connected() == False  # banned, so wont connect again
+
+    IP_Limiter.reset_test()
+
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    ack = client.emit(
+        "create-game",
+        {
+            "payload": {
+                "color": "w",
+                "name": "this is a very long long long long long name!!!!!!!",
+            }
+        },
+        callback=True,
+    )
+    assert ack == []
+    assert client.is_connected() == False
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    assert client.is_connected() == False  # banned, so wont connect again
+
+    IP_Limiter.reset_test()
+
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    ack = client.emit(
+        "create-game", {"payload": {"color": "w", "name": "hieu"}}, callback=True
+    )
+
+    assert "success" in ack and "payload" in ack
+    assert ack["success"] == True
+    assert type(ack["payload"]) == str
+
+
+def test_ratelimit():
+    client = socketio.test_client(app, headers={"REMOTE_ADDR": "127.0.0.1"})
+    client2 = socketio.test_client(
+        app, headers={"REMOTE_ADDR": "some random ip address"}
+    )
+
+    for _ in range(100):
+        if client.is_connected():
+            client.emit(
+                "make-move",
+                {"payload": {"room_id": "id", "move": {"from": "a3", "to": "b1"}}},
+            )
+        else:
+            break
+
+    assert client.is_connected() == False
+    with pytest.raises(RuntimeError):
+        client.emit(
+            "make-move",
+            {"payload": {"room_id": "id", "move": {"from": "a3", "to": "b1"}}},
+        )
+
+    assert IP_Limiter.is_banned("127.0.0.1") == True
+    assert client2.is_connected() == True
+
+    client2.emit("create-game", {"payload": {"color": "b", "name": "hieu1"}})
+    client2.emit(
+        "make-move",
+        {"payload": {"room_id": "id", "move": {"from": "a3", "to": "b1"}}},
+    )
+    client2.emit(
+        "make-move",
+        {"payload": {"room_id": "id", "move": {"from": "a3", "to": "b1"}}},
+    )
+
+    assert IP_Limiter.is_banned("some random ip address") == False
+    assert client2.is_connected() == True

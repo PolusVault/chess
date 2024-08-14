@@ -1,5 +1,10 @@
-from ..core import GameState, Room, Client
 import pytest
+from ..core import _GameState, Room, Client
+from .. import create_app
+
+_, config = create_app(is_testing=True)
+
+GameState = _GameState(config)
 
 
 def test_client():

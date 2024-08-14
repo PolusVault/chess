@@ -7,24 +7,18 @@ from flask_socketio import (
     disconnect,
     ConnectionRefusedError,
 )
-import logging
-from . import socketio
-from .core import GameState
-from .utils import success, is_prod_env, get_ip
-from .limit import IP_Limiter, RateLimiter
+from . import socketio, config
+from .core import _GameState
+from .utils import success, get_ip
+from .limit import _IP_Limiter, _RateLimiter
+from .loggers import socket_logger
+
 
 game = Blueprint("game", __name__)
 
-logger = logging.getLogger("mysocketio")
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
-if is_prod_env():
-    logger.setLevel(logging.WARNING)
-else:
-    logger.setLevel(logging.DEBUG)
+IP_Limiter = _IP_Limiter(config)
+RateLimiter = _RateLimiter(IP_Limiter, config)
+GameState = _GameState(config)
 
 
 def ban():
@@ -35,7 +29,7 @@ def ban():
 
 @socketio.on("connect")
 def connect():
-    logger.debug("new socket connection")
+    socket_logger.debug("new socket connection")
 
     ip = get_ip()
 
@@ -46,19 +40,19 @@ def connect():
     try:
         GameState.new_client(request.sid)
     except Exception as e:
-        logger.debug("connection error: %s", str(e))
+        socket_logger.debug("connection error: %s", str(e))
         raise ConnectionRefusedError()
 
 
 @socketio.on("disconnect")
 def disconnect_():
-    logger.debug("socket disconnect")
+    socket_logger.debug("socket disconnect")
 
     GameState.disconnect_player(request.sid)
     IP_Limiter.handle_disconn(get_ip())
 
-    logger.debug("room count: %s", GameState.get_room_count())
-    logger.debug("clients count: %s", GameState.get_client_count())
+    socket_logger.debug("room count: %s", GameState.get_room_count())
+    socket_logger.debug("clients count: %s", GameState.get_client_count())
 
 
 @socketio.on("create-game")
@@ -83,12 +77,12 @@ def create_game(data):
 
         join_room(room_id)
 
-        logger.debug("room count: %s", GameState.get_room_count())
-        logger.debug("clients count: %s", GameState.get_client_count())
+        socket_logger.debug("room count: %s", GameState.get_room_count())
+        socket_logger.debug("clients count: %s", GameState.get_client_count())
 
         return success(room_id)
     except Exception as e:
-        logger.debug(e)
+        socket_logger.debug(e)
         disconnect()
         return
 
@@ -120,8 +114,8 @@ def join_game(data):
             include_self=False,
         )
 
-        logger.info("room count: %s", GameState.get_room_count())
-        logger.info("clients count: %s", GameState.get_client_count())
+        socket_logger.debug("room count: %s", GameState.get_room_count())
+        socket_logger.debug("clients count: %s", GameState.get_client_count())
 
         return success(room.get_opponent(request.sid))
     except:
@@ -130,6 +124,7 @@ def join_game(data):
 
 
 @socketio.on("leave-game")
+@RateLimiter.limit
 def leave_game(data):
     room_id = data["payload"]["room_id"]
 
@@ -151,8 +146,8 @@ def leave_game(data):
                 include_self=False,
             )
 
-        logger.info("room count: %s", GameState.get_room_count())
-        logger.info("clients count: %s", GameState.get_client_count())
+        socket_logger.debug("room count: %s", GameState.get_room_count())
+        socket_logger.debug("clients count: %s", GameState.get_client_count())
 
         return success()
     except:
@@ -183,7 +178,7 @@ def make_move(data):
 
     emit("make-move", move, include_self=False, to=room_id)
 
-    logger.debug("move: %s", move)
+    socket_logger.debug("move: %s", move)
     # return success()
 
 

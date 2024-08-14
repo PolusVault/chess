@@ -1,3 +1,4 @@
 Flask==3.0.3
 Flask-SocketIO==5.3.6
 shortuuid==1.0.13
+apscheduler==3.10.4

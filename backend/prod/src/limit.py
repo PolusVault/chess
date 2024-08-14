@@ -1,28 +1,34 @@
 import time
 from functools import wraps
-from flask import request
 from flask_socketio import disconnect
-import logging
+from apscheduler.schedulers.background import BackgroundScheduler
 from .utils import get_ip
+from .loggers import limit_logger
 
 
 class _IP_Limiter:
-    def __init__(self, limit=10):
+    CONN_LIMIT = None
+    BAN_LIMIT = None
+
+    def __init__(self, config, limit=10):
         self.limit = limit
         self.connections = {}
         self.banned = []
 
+        _IP_Limiter.CONN_LIMIT = int(config["CONN_LIMIT"])
+        _IP_Limiter.BAN_LIMIT = int(config["BAN_LIMIT"])
+
     def handle_conn(self, ip):
-        """
-        this method returns False if a connection exceed the limit
-        """
-        if len(self.connections) >= 500:
+        """this method returns False if a connection exceed the limit"""
+        if len(self.connections) >= _IP_Limiter.CONN_LIMIT:
+            return False
+
+        if len(self.banned) >= _IP_Limiter.BAN_LIMIT:
             return False
 
         if ip in self.connections:
             if self.connections[ip] >= self.limit:
-                if len(self.banned) <= 10000:
-                    self.banned.append(ip)
+                self.ban(ip)
                 return False
             self.connections[ip] += 1
         else:
@@ -37,7 +43,7 @@ class _IP_Limiter:
                 del self.connections[ip]
         else:
             # this should never happen
-            pass
+            raise RuntimeError("disconnecting nonexistent IP address")
 
     def ban(self, ip):
         self.banned.append(ip)
@@ -45,22 +51,34 @@ class _IP_Limiter:
     def is_banned(self, ip):
         return ip in self.banned
 
-
-IP_Limiter = _IP_Limiter()
-
-
-logger = logging.getLogger("limiter")
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+    # for testing
+    def reset_test(self):
+        self.connections = {}
+        self.banned = []
 
 
 class _RateLimiter:
-    def __init__(self):
-        # 3 req / s
-        self.max_req_count = 10
+    RATE_LIMIT_BACKGROUND_INTERVAL = None
+    MAX_REQ_COUNT = None
+
+    def __init__(self, ip_limiter, config):
+        self.ip_limiter = ip_limiter
+        # self.max_req_count = max_req_count  # req / s
         self.__requests = {}
+        self.disabled = False
+
+        _RateLimiter.RATE_LIMIT_BACKGROUND_INTERVAL = int(
+            config["RATE_LIMIT_BACKGROUND_INTERVAL"]
+        )
+        _RateLimiter.MAX_REQ_COUNT = int(config["MAX_REQ_COUNT"])
+
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            self.cleanup,
+            "interval",
+            seconds=_RateLimiter.RATE_LIMIT_BACKGROUND_INTERVAL,
+        )
+        scheduler.start()
 
     def get(self, key):
         self.cleanup()
@@ -81,22 +99,42 @@ class _RateLimiter:
     # delete entries that has lived past their specified time
     def cleanup(self):
         curr_time = time.time()
+        dirty = []
         for key, val in self.__requests.items():
-            if val["creation_time"] - curr_time >= val["time_window"]:
-                logger.debug("bye")
-                del self.__requests[key]
+            if curr_time - val["creation_time"] >= val["time_window"]:
+                limit_logger.debug("bye")
+                # del self.__requests[key]
+                dirty.append(key)
+
+        for k in dirty:
+            del self.__requests[k]
+
+    # --- TESTING METHODS, DO NOT USE ---
+    def disable(self):
+        self.disabled = True
+
+    def enable(self):
+        self.disabled = False
+
+    def get_without_cleanup(self, key):
+        return self.__requests.get(key)
 
     def limit(self, handler):
         @wraps(handler)
         def with_ratelimit(*args, **kwargs):
+            if self.disabled:
+                limit_logger.warning("disableddddddd")
+                return handler(*args, **kwargs)
+
             ip = get_ip()
 
             req = self.get(ip)
 
-            if req is not None and req["count"] > self.max_req_count:
-                logger.warning("rate limit exceeded")
+            if req is not None and req["count"] > _RateLimiter.MAX_REQ_COUNT:
+                limit_logger.warning("rate limit exceeded")
+                limit_logger.warning(req)
                 disconnect()
-                IP_Limiter.ban(ip)
+                self.ip_limiter.ban(ip)
                 return
 
             if req is None:
@@ -107,6 +145,3 @@ class _RateLimiter:
             return handler(*args, **kwargs)
 
         return with_ratelimit
-
-
-RateLimiter = _RateLimiter()

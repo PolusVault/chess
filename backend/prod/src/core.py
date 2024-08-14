@@ -79,17 +79,22 @@ class Room:
 
 
 class _GameState:
-    LIMIT = 500
+    # LIMIT = int(config["CONN_LIMIT"])
+    CONN_LIMIT = None  # this will be set properly once the app is loaded
+    ROOMS_LIMIT = None
 
-    def __init__(self):
+    def __init__(self, config):
         self.__rooms: dict[str, Room] = {}
         self.__clients: dict[str, Client] = {}
+
+        _GameState.CONN_LIMIT = int(config["CONN_LIMIT"])
+        _GameState.ROOMS_LIMIT = int(config["ROOMS_LIMIT"])
 
     def get_client(self, id) -> Client | None:
         return self.__clients.get(id)
 
     def new_client(self, id) -> Client | None:
-        if len(self.__clients) >= GameState.LIMIT:
+        if len(self.__clients) >= _GameState.CONN_LIMIT:
             raise Exception("player limit exceeded")
 
         if id not in self.__clients:
@@ -116,7 +121,7 @@ class _GameState:
         if client is None:  # the client MUST exist at this point
             raise Exception("create room: client doesn't exist")
 
-        if client.rooms_count >= 5:
+        if client.rooms_count >= _GameState.ROOMS_LIMIT:
             raise Exception("rooms limit exceeded")
 
         if name is not None:
@@ -228,4 +233,4 @@ class _GameState:
         return len(self.__clients)
 
 
-GameState = _GameState()
+# GameState = _GameState()
