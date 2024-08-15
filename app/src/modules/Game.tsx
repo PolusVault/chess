@@ -11,7 +11,7 @@ import {
     playMove,
     Color,
 } from "../chess";
-import Button from "../ui/Button";
+// import Button from "../ui/Button";
 import PlayerInfo from "../ui/PlayerInfo";
 import Modal from "../ui/Modal";
 

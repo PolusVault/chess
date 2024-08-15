@@ -9,7 +9,7 @@ import "./App.css";
 
 export default function App() {
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isConnected, setIsConnected] = useState(socket.connected);
+    const [_, setIsConnected] = useState(socket.connected);
     const roomInfoRef = useRef<{ room_id: string } | null>(null);
     const { myColor, name, setOpponent, setColor, setRoomId } = useGameState(
         (state) => ({
